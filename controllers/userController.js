@@ -1,20 +1,29 @@
 const User = require('../models/user');
+const jwt = require('jsonwebtoken');
+
+
+const JWT_SECRET = 'coder';
 
 exports.createNew = async (req, res) => {
-
     try {
+      const existingUser = await User.findOne({ email: req.body.email });
+  
+      if (existingUser) {
 
-        const newUser = new User(req.body);
-        await newUser.save();
-
-        res.status(201).json(newUser);
-        
+        return res.status(400).json({ message: "Email already in use!" });
+      }
+  
+      const newUser = new User(req.body);
+      await newUser.save();
+  
+      res.status(201).json(newUser);
+  
     } catch (error) {
-
-        res.status(400).json({ error: err.message });
-
+      
+      res.status(400).json({ error: error.message });
     }
-};
+  };
+  
 
 exports.getUsers = async (req, res) => {
 
@@ -25,7 +34,7 @@ exports.getUsers = async (req, res) => {
         
     } catch (error) {
 
-        res.status(400).json({ error: err.message})
+        res.status(400).json({ error: error})
 
         
     }
@@ -43,7 +52,7 @@ exports.getUserId = async (req, res) => {
         
     } catch (error) {
 
-        res.status(500).json({ error: err.message})
+        res.status(500).json({ error: error})
 
     }
 
@@ -95,6 +104,31 @@ exports.getPostsUser = async (req, res) => {
         
     }
 };
+
+exports.LoginUser = async (req, res) => {
+    try {
+        const existingUser = await User.findOne({ email: req.body.email, password: req.body.password });
+
+        if (existingUser) {
+        
+            const token = jwt.sign(
+                { id: existingUser._id, email: existingUser.email }, 
+                JWT_SECRET,                                          
+                { expiresIn: '1h' }                                  
+            );
+
+         
+            return res.json({ message: "Logged in successfully", token });
+        } else {
+           
+            return res.status(400).send("Incorrect Email Or Password");
+        }
+    } catch (error) {
+       
+        return res.status(500).json("Internal Server Error");
+    }
+};
+
 
 
 
